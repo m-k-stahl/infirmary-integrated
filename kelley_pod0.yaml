@@ -1,0 +1,745 @@
+#
+# Kelley POD 0 — Master Scenario Stub
+# ====================================
+#
+# Mark Stahl MSN RN CCRN
+# Source canon: OH_Confederate_Role_Cards_v4 + OH_SimMon_Vitals_Programming_v1 +
+#               OH_SimMon_Programming_Corrections_S5_S6_S7
+#
+# This file is the spine of the Kelley sim. It is readable as a paper script
+# today, and will be the input format for the teleprompter when that exists.
+#
+# How to use right now (paper mode):
+#   1. Print this file.
+#   2. Read it top-to-bottom during the sim.
+#   3. After the May 18 pilot, edit beats based on what actually happened.
+#      Add the granular cues you wished you had. Remove the ones that
+#      didn't matter.
+#
+# Conventions:
+#   - id:                 stable identifier (B###). Never reuse. Insert as B###a if needed.
+#   - phase:              which of the 8 scenarios this beat belongs to.
+#   - cue:                the line of text you read. Imperative, short.
+#   - actor:              who in the room owns this beat (instructor | confederate name | team).
+#   - wait_for:           when can the engine advance.
+#                         Options:
+#                           - instructor_ack         (you tap "done")
+#                           - instructor_observation (you tap which observation happened)
+#                           - action_complete        (an HTTP call returned)
+#                           - team_action            (team did something — manual ack)
+#                           - timer:Ns               (wait N seconds — V2)
+#   - action:             optional. What the engine does in the background.
+#                         For now treat this as documentation; the engine
+#                         doesn't exist yet. Fire manually if needed.
+#   - tags_on_advance:    observations that are true by definition once you advance past this beat.
+#   - observation_options: tap targets when wait_for is instructor_observation.
+#   - simmon:             preset to load (matches SimMon Vitals Programming v1 corrected).
+#   - notes:              facilitator notes — what to watch for, what makes this beat hard.
+#
+# Conventions for editing post-pilot:
+#   - If a beat felt right but in the wrong place, move it; the id stays the same.
+#   - If a beat needed splitting, the second half gets a new id (B###a).
+#   - If a beat was useless, comment it out — don't delete. You may want it back.
+#   - If a cue was wrong, edit the text and bump the scenario version.
+#
+
+scenario:
+  id: kelley_pod0
+  title: "James Kelley — POD 0 CABG x2 + MVR"
+  version: 0.1
+  canon_source: "v4 confederate cards, v1 SimMon programming"
+  estimated_runtime_min: 240  # full 8-scenario day
+
+  patient:
+    name: "Kelley, James"
+    mrn: "4471902"
+    dob: "1958-03-12"
+    age: 67
+    sex: M
+    height_cm: 178
+    weight_kg: 92
+    bsa_m2: 2.1
+
+    procedure: "CABG x2 + mechanical mitral valve replacement + LAA closure"
+    surgeon: "Dr. Thompson"
+    bypass_time_min: 150
+    crossclamp_min: 118
+    grafts: "LIMA to LAD, SVG to OM"
+    valve: "St. Jude mechanical mitral, size 29"
+
+    ef_preop_pct: 35
+    history: "afib, DM2, HTN, BMI 31, hx rheumatic fever"
+
+    family:
+      - { name: "Patricia Kelley", relationship: "wife of 42 years", age: 68 }
+
+  confederates:
+    - { id: alex,      name: "Alex",                role: "Charge RN",         active_in: [S1, S2, S3, S4, S5, S6, S7, S8] }
+    - { id: jen,       name: "Jen Morales",         role: "OR Circulator",     active_in: [S1, S3, S7] }
+    - { id: patricia,  name: "Patricia Kelley",     role: "Wife",              active_in: [S2, S4, S6, S7] }
+    - { id: swan,      name: "Dr. Swan",            role: "Anesthesiology",    active_in: [S3] }
+    - { id: thompson,  name: "Dr. Thompson",        role: "CT Surgery",        active_in: [S3, S4, S5, S6, S7, S8] }
+    - { id: melissa,   name: "Melissa",             role: "Respiratory Therapy", active_in: [S3] }
+
+  # ---------------------------------------------------------------------------
+  # PHASES — coarse buckets matching the v4 8-scenario sequence
+  # ---------------------------------------------------------------------------
+  phases:
+    - { id: S1, label: "Room Setup",                 expected_duration_min: 15 }
+    - { id: S2, label: "Family Meeting / OR Report", expected_duration_min: 20 }
+    - { id: S3, label: "Patient Landing",            expected_duration_min: 30 }
+    - { id: S4, label: "Hemodynamic Instability",    expected_duration_min: 25 }
+    - { id: S5, label: "Uncontrolled HTN",           expected_duration_min: 20 }  # NEW per v4
+    - { id: S6, label: "Hemorrhage",                 expected_duration_min: 25 }
+    - { id: S7, label: "Tamponade",                  expected_duration_min: 20 }
+    - { id: S8, label: "Cardiac Arrest",             expected_duration_min: 25 }
+
+  # ===========================================================================
+  # BEATS
+  # ===========================================================================
+  beats:
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 1 — ROOM SETUP
+    # Primary: RN 1, RN 2. Active confederates: Jen (phone), Alex.
+    # -------------------------------------------------------------------------
+
+    - id: B001
+      phase: S1
+      actor: instructor
+      cue: "Brief the room. Hand off RN 1 and RN 2. Remaining 6 observers are prepping for S2 roles."
+      wait_for: instructor_ack
+      tags_on_advance: [scenario_started]
+
+    - id: B002
+      phase: S1
+      actor: alex
+      cue: "Alex (charge): walk over to RNs. 'Your OR patient is about 20 minutes out. I've got a tech who can help you get your room ready if you need it.'"
+      wait_for: instructor_ack
+      notes: "Alex stays visible but busy. Does not give clinical hints."
+
+    - id: B003
+      phase: S1
+      actor: alex
+      cue: "Alex: mention the family. 'Family is in the waiting room. Her name is Mrs. Kelley. She has been there all day. Once you are ready, someone should go talk to her.'"
+      wait_for: instructor_ack
+      tags_on_advance: [family_introduced_to_team]
+
+    - id: B004
+      phase: S1
+      actor: team
+      cue: "RNs perform room setup. Observe: are they setting up suction, checking the pacer box, prepping the Atrium, confirming meds?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_setup_complete_and_organized
+        - team_missed_pacer_box
+        - team_missed_atrium_setup
+        - team_did_not_prep_meds
+      notes: "This is silent observation time. Let them work."
+
+    - id: B005
+      phase: S1
+      actor: jen
+      cue: "Cue Jen (OR circulator) to call. She delivers the full phone report — CABG x2 + MVR, cross-clamp 118, bypass 150, ACT 134, junctional, norepi 0.08, etc."
+      wait_for: instructor_ack
+      action:
+        type: instructor_cue
+        target: confederate_phone
+        notes: "Jen reads from her S1 card. Phone rings at the nursing station."
+      tags_on_advance: [or_report_delivered]
+
+    - id: B006
+      phase: S1
+      actor: team
+      cue: "Did the RNs ask clarifying questions? Pacing? Lines? Mechanical valve?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_asked_about_pacing
+        - team_asked_about_lines
+        - team_asked_about_mechanical_valve
+        - team_asked_no_questions
+
+    - id: B007
+      phase: S1
+      actor: instructor
+      cue: "S1 closing: confirm team has the patient picture. Transition to S2 — family meeting."
+      wait_for: instructor_ack
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 2 — FAMILY MEETING
+    # Primary: RN 1, RN 2. Active: Patricia, Alex.
+    # -------------------------------------------------------------------------
+
+    - id: B008
+      phase: S2
+      actor: alex
+      cue: "Alex prompts: 'Hey — Mrs. Kelley is in the family lounge asking about coming in. Can one of you go talk to her before her husband gets here?'"
+      wait_for: instructor_ack
+
+    - id: B009
+      phase: S2
+      actor: patricia
+      cue: "Patricia opens: 'Oh, thank goodness. I've been sitting out there for six hours. Is he okay? Can I see him? How did it go?'"
+      wait_for: instructor_observation
+      observation_options:
+        - rn_introduced_self_calmly
+        - rn_used_too_much_jargon
+        - rn_did_not_introduce
+      notes: "Patricia is anxious but cooperative. Settles when the RN is calm."
+
+    - id: B010
+      phase: S2
+      actor: patricia
+      cue: "Patricia asks the tube/wires/valve questions in sequence: ETT, epicardial wires, mechanical valve, prognosis."
+      wait_for: instructor_observation
+      observation_options:
+        - rn_prepared_her_for_what_she_will_see
+        - rn_set_timeline_expectations
+        - rn_explained_mechanical_valve_sound
+        - rn_missed_one_or_more
+      notes: "Trigger statements if RN stalls — see Patricia S2 card."
+
+    - id: B011
+      phase: S2
+      actor: instructor
+      cue: "S2 closing: team should be ready for arrival. Patricia waits per RN instruction."
+      wait_for: instructor_ack
+      tags_on_advance: [family_meeting_complete]
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 3 — PATIENT LANDING
+    # Primary: RN 1, RN 2. Active: Swan, Thompson, Alex, Melissa RT, Jen (bedside).
+    # -------------------------------------------------------------------------
+
+    - id: B012
+      phase: S3
+      actor: instructor
+      cue: "Patient arrives. Confederate or vest stand-in in the bed. Load SimMon S3 BASELINE."
+      simmon: S3_baseline
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        target: simmon
+        preset: "S3 Baseline (landing)"
+      notes: "HR 52 junctional / MAP 63 / CVP 14 / CI 1.8 / SpO2 92% on 0.60. Marginal across all four domains."
+
+    - id: B013
+      phase: S3
+      actor: jen
+      cue: "Jen at bedside, brief: 'He's been stable in transport. Rhythm is still junctional, pressure held. Dr. Swan and Dr. Thompson will give you their report now.'"
+      wait_for: instructor_ack
+
+    - id: B014
+      phase: S3
+      actor: swan
+      cue: "Dr. Swan and Dr. Thompson deliver simultaneous handoff. Do not wait turns. Anesthesia report includes: 7.5 ETT at 23 at lip, vent FiO2 0.60 / TV 500 / rate 14 / PEEP 8, do not rush extubation, ACT 134, intraop products."
+      wait_for: instructor_ack
+
+    - id: B015
+      phase: S3
+      actor: thompson
+      cue: "Dr. Thompson (bedside): surgical summary, what to watch for, pacing plan, anticoag plan. Then both physicians leave."
+      wait_for: instructor_ack
+      tags_on_advance: [bedside_handoff_complete]
+
+    - id: B016
+      phase: S3
+      actor: team
+      cue: "Team begins initial assessment. Watch: do they connect the Atrium first? Confirm vent settings? Mark CT baseline?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_connected_atrium_first
+        - team_confirmed_vent_settings
+        - team_marked_ct_baseline
+        - team_assessed_head_to_toe
+
+    - id: B017
+      phase: S3
+      actor: instructor
+      cue: "Baseline labs available — fire print bundle."
+      action:
+        type: http_post
+        target: print_service
+        endpoint: /print/bundle/kelley_baseline_all
+        notes: "Hits printpi.local:8080. Bundle = baseline ABG, CBC, BMP, coags."
+      wait_for: action_complete
+      tags_on_advance: [baseline_labs_delivered]
+
+    - id: B018
+      phase: S3
+      actor: team
+      cue: "Team should recognize: junctional brady at 52, CI 1.8, epicardial wires available, pacing orders already written. Trigger pacing decision."
+      wait_for: instructor_observation
+      observation_options:
+        - team_initiated_atrial_pacing_per_orders
+        - team_called_surgeon_for_orders_unnecessarily
+        - team_gave_atropine
+        - team_continued_to_monitor_without_action
+
+    - id: B019
+      phase: S3
+      actor: instructor
+      cue: "If pacing initiated correctly — load S3 PACED preset. MAP 76, CI 2.2. Patient looks better."
+      simmon: S3_paced
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S3 Paced (correct)"
+      notes: "Branch: if team chose wrong action, load the appropriate alternate preset and let consequences play. Re-cue pacing decision after consequence visible."
+
+    - id: B020
+      phase: S3
+      actor: instructor
+      cue: "S3 closing — load S3 RECOVERED. Transition to S4 (45 min into admission, conceptually)."
+      simmon: S3_recovered
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S3 Recovered"
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 4 — HEMODYNAMIC INSTABILITY
+    # Primary: RN 3, RN 4. Active: Alex, Thompson (phone).
+    # -------------------------------------------------------------------------
+
+    - id: B021
+      phase: S4
+      actor: instructor
+      cue: "Reset roles. RN 3 and RN 4 take over. Brief: 'You are 45 minutes into admission. The patient has been stable. Take report from the off-going RNs.'"
+      wait_for: instructor_ack
+      tags_on_advance: [s4_role_handoff_complete]
+
+    - id: B022
+      phase: S4
+      actor: instructor
+      cue: "Load S4 BASELINE. CI 1.9, marginal but stable on current support."
+      simmon: S4_baseline
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S4 Baseline"
+
+    - id: B023
+      phase: S4
+      actor: instructor
+      cue: "T+3 min — trigger CAPTURE LOSS. Underlying junctional rhythm returns. CI drops to 1.6."
+      simmon: S4_capture_loss
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S4 Capture loss"
+      notes: "Watch the team work the rhythm + low CI problem together."
+
+    - id: B024
+      phase: S4
+      actor: team
+      cue: "Team troubleshoots. Watch: do they check leads, increase output, recapture? Or do they reach for dobutamine?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_troubleshot_pacer_and_recaptured
+        - team_added_dobutamine
+        - team_called_surgeon
+        - team_continued_to_monitor
+
+    - id: B025
+      phase: S4
+      actor: instructor
+      cue: "Load appropriate consequence preset. If recapture: S4 Recovered. If dobutamine: drift toward Wrong path."
+      wait_for: instructor_ack
+
+    - id: B026
+      phase: S4
+      actor: instructor
+      cue: "T+15 min — transition to S5 or S6 depending on flow. CT output may begin rising as bridge to hemorrhage block."
+      wait_for: instructor_ack
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 5 — UNCONTROLLED HTN (NEW in v4 — STUB)
+    # Primary: RN 3, RN 4. Active: Alex, Thompson (phone).
+    #
+    # TODO post-pilot: this scenario is new in the v4 sequence and does not yet
+    # have a SimMon programming guide. Fill in beats based on what you actually
+    # run on May 18. Likely structure:
+    #   - Trigger HTN episode (MAP > 105, sustained)
+    #   - Team must recognize, address pain/anxiety, consider nicardipine
+    #     vs. nitroprusside, address volume status, consider rebleeding risk
+    #   - Wrong: bolus opioid without checking pain, ignore, treat with
+    #     nitro and tank the BP
+    #   - Correct: structured assessment, appropriate agent, monitor response
+    # -------------------------------------------------------------------------
+
+    - id: B027
+      phase: S5
+      actor: instructor
+      cue: "S5 STUB — fill in after May 18 pilot. Trigger HTN, observe response."
+      wait_for: instructor_ack
+      notes: "PLACEHOLDER. Replace with real beats post-pilot."
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 6 — HEMORRHAGE
+    # Primary: RN 5, RN 6. Active: Patricia, Alex, Thompson (phone).
+    # Hemorrhage rig armed. Solenoid valve closed. Instructor controls
+    # BleedingEdge interface.
+    # -------------------------------------------------------------------------
+
+    - id: B028
+      phase: S6
+      actor: instructor
+      cue: "Reset roles. RN 5 and RN 6 take over. Brief: 'You are managing a stable post-op patient. Take report.'"
+      wait_for: instructor_ack
+      tags_on_advance: [s6_role_handoff_complete]
+
+    - id: B029
+      phase: S6
+      actor: instructor
+      cue: "Load S6 BASELINE (continuous from S4/S5 hand-off). CT output 60 mL last 20 min — the trend is the warning."
+      simmon: S5_bleed_baseline  # note SimMon doc names this S5; v4 renames it to S6
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S5 Bleed 1st dump preset baseline"
+
+    - id: B030
+      phase: S6
+      actor: patricia
+      cue: "Patricia is at bedside, holding James's hand. Quiet, looks tired. To the RN: 'He looks so pale. Is that normal after surgery?'"
+      wait_for: instructor_ack
+
+    - id: B031
+      phase: S6
+      actor: instructor
+      cue: "T+5 min — fire FIRST DUMP. 5-second burst, ~60-80 mL into Atrium."
+      action:
+        type: http_post
+        target: hemorrhage_sim
+        endpoint: /burst
+        payload: { duration_ms: 5000 }
+        notes: "Hits the hemorrhage ESP32 at 192.168.4.100 on BleedingEdge SSID."
+      wait_for: action_complete
+      tags_on_advance: [hemorrhage_first_dump]
+
+    - id: B032
+      phase: S6
+      actor: instructor
+      cue: "Advance SimMon to S5 first-dump preset. Sinus tach compensating, CVP falling."
+      simmon: S5_bleed_1st_dump
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S5 Bleed 1st dump"
+      notes: "Lag 30-60 sec behind valve fire. Real physiology is not instant."
+
+    - id: B033
+      phase: S6
+      actor: patricia
+      cue: "Patricia stands up. 'What is happening? What is that? Is that blood? Why is there so much blood?'"
+      wait_for: instructor_ack
+
+    - id: B034
+      phase: S6
+      actor: team
+      cue: "Watch: does the team recognize, call surgeon, draw labs, communicate with Patricia?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_recognized_within_90s
+        - team_called_surgeon_within_3min
+        - team_drew_stat_coags
+        - team_addressed_patricia
+        - team_missed_or_stalled
+
+    - id: B035
+      phase: S6
+      actor: alex
+      cue: "Alex enters bay at ~90 sec post-dump if team has not called for help. 'I heard the alarms. What do you need?'"
+      wait_for: instructor_ack
+
+    - id: B036
+      phase: S6
+      actor: alex
+      cue: "Alex trigger statements (use only if team stalls): chest tube comment, surgeon call, Patricia removal."
+      wait_for: instructor_ack
+      notes: "Alex stands at doorway. Does not take clinical control."
+
+    - id: B037
+      phase: S6
+      actor: instructor
+      cue: "T+10 min — if surgeon NOT called yet, fire SECOND DUMP. 7-second burst, ~100 mL."
+      action:
+        type: http_post
+        target: hemorrhage_sim
+        endpoint: /burst
+        payload: { duration_ms: 7000 }
+      wait_for: action_complete
+      tags_on_advance: [hemorrhage_second_dump]
+
+    - id: B038
+      phase: S6
+      actor: instructor
+      cue: "Advance SimMon to S5 second-dump preset. Compensated hemorrhagic shock."
+      simmon: S5_bleed_2nd_dump
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S5 Bleed 2nd dump"
+
+    - id: B039
+      phase: S6
+      actor: thompson
+      cue: "When team calls Thompson: if organized SBAR — give orders (pRBC, stat coag panel, recheck ACT, threshold for coming in). If disorganized — hang up."
+      wait_for: instructor_observation
+      observation_options:
+        - team_gave_organized_sbar
+        - team_called_disorganized_got_hung_up
+        - team_did_not_call
+
+    - id: B040
+      phase: S6
+      actor: instructor
+      cue: "Fire serial CBC and coag prints based on team requests. Print service knows current scenario state."
+      action:
+        type: http_post
+        target: print_service
+        endpoint: /print/bundle/kelley_hemorrhage_workup
+      wait_for: action_complete
+      tags_on_advance: [hemorrhage_labs_delivered]
+
+    - id: B041
+      phase: S6
+      actor: instructor
+      cue: "Bridge to S7. If team stays correct → load S5 Bleed correct preset. If team manipulates chest tubes → load S5 Tube manipulation preset (bridge to tamponade)."
+      wait_for: instructor_ack
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 7 — TAMPONADE
+    # Primary: RN 5, RN 6. Active: Patricia, Alex, Thompson (phone), Jen (OR phone intercept).
+    # Key physical action: Alex covertly clamps the chest tube on instructor hand signal.
+    # -------------------------------------------------------------------------
+
+    - id: B042
+      phase: S7
+      actor: instructor
+      cue: "Hand signal to Alex: clamp the chest tube proximal to drainage unit. Do not announce. Return to station."
+      wait_for: instructor_ack
+      action:
+        type: instructor_cue
+        target: alex
+        notes: "Vegas Principle: Alex does not signal what she did. Let the team find it."
+      tags_on_advance: [chest_tube_clamped]
+
+    - id: B043
+      phase: S7
+      actor: instructor
+      cue: "Load S6 Tamponade early. CVP 18, PAM 22, gap narrowing."
+      simmon: S6_tamponade_early
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S6 Tamponade early (corrected per S5/S6/S7 corrections doc)"
+      notes: "The DISCREPANCY is the teaching point. Bleeding does not stop spontaneously. Where did it go?"
+
+    - id: B044
+      phase: S7
+      actor: team
+      cue: "Watch: does the team note the chest tube output dropped while patient is getting worse?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_noticed_output_drop_with_worsening
+        - team_continued_volume_resuscitation
+        - team_noticed_filling_pressure_equalization
+        - team_examined_chest_tube_setup
+        - team_missed_discrepancy
+
+    - id: B045
+      phase: S7
+      actor: patricia
+      cue: "Patricia (still at bedside): 'Something is wrong. Something is really wrong. He looks worse than before. Why did the blood stop?'"
+      wait_for: instructor_ack
+      notes: "Patricia is now terrified. Out of her mind with fear, not irrational."
+
+    - id: B046
+      phase: S7
+      actor: instructor
+      cue: "T+4 min — advance to S6 Tamponade pre-arrest. CVP 24, PAM 25. Near-complete equalization."
+      simmon: S6_tamponade_pre_arrest
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S6 Tamponade pre-arrest"
+      notes: "Cliff edge. If recognition does not come now, patient arrests."
+
+    - id: B047
+      phase: S7
+      actor: team
+      cue: "Final check: did team recognize tamponade and call surgeon for emergent re-exploration?"
+      wait_for: instructor_observation
+      observation_options:
+        - team_recognized_called_for_re_exploration
+        - team_continued_volume_only
+        - team_recognized_but_did_not_escalate
+
+    - id: B048
+      phase: S7
+      actor: instructor
+      cue: "If recognized: Alex unclamps off-screen. Load S6 Recognized + released preset. Surge of 200 mL bright red."
+      simmon: S6_recognized_released
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S6 Recognized + released"
+
+    - id: B049
+      phase: S7
+      actor: jen
+      cue: "Jen calls from OR phone: 'OR is ready. We can take him in 10 minutes. What's the plan?'"
+      wait_for: instructor_ack
+      notes: "Only fire this if team called for re-exploration."
+
+    - id: B050
+      phase: S7
+      actor: instructor
+      cue: "S7 closing — transition to S8. May break for lunch / debrief block here per agenda."
+      wait_for: instructor_ack
+
+    # -------------------------------------------------------------------------
+    # SCENARIO 8 — CARDIAC ARREST AND BEDSIDE STERNOTOMY
+    # Primary: RN 7, RN 8. Active: all 6 remaining as code team.
+    # 4 hours into admission. Patient stable, then sudden VF arrest.
+    # -------------------------------------------------------------------------
+
+    - id: B051
+      phase: S8
+      actor: instructor
+      cue: "Reset roles. RN 7 and RN 8 take over. Brief: 'Approximately 4 hours into admission. Patient has stabilized from morning events.'"
+      wait_for: instructor_ack
+      tags_on_advance: [s8_role_handoff_complete]
+
+    - id: B052
+      phase: S8
+      actor: instructor
+      cue: "Load S7 BASELINE (4h in). Patient looks recovered. Team performs initial assessment."
+      simmon: S7_baseline
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S7 Baseline (4h in)"
+
+    - id: B053
+      phase: S8
+      actor: instructor
+      cue: "T+5 min — VF ARREST manual trigger. Monitor alarms. Loss of organized rhythm."
+      simmon: S7_vf_arrest
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S7 VF arrest"
+
+    - id: B054
+      phase: S8
+      actor: team
+      cue: "Watch the code team. CPR initiation, ACLS algorithm, defibrillation, ROSC pursuit."
+      wait_for: instructor_observation
+      observation_options:
+        - cpr_initiated_within_10s
+        - shock_delivered_within_2min
+        - meds_per_acls_algorithm
+        - bedside_sternotomy_considered
+        - team_struggled_with_role_assignment
+
+    - id: B055
+      phase: S8
+      actor: instructor
+      cue: "STUB — bedside sternotomy decision point. Fill in based on May 18 experience. Likely beats: surgeon notified, internal defib pads, open chest, internal compression."
+      wait_for: instructor_ack
+      notes: "PLACEHOLDER. Build out post-pilot."
+
+    - id: B056
+      phase: S8
+      actor: instructor
+      cue: "Load S7 Post-ROSC. HR 110 sinus, MAP 67, lactate will be elevated."
+      simmon: S7_post_rosc
+      wait_for: instructor_ack
+      action:
+        type: simmon_preset
+        preset: "S7 Post-ROSC"
+
+    - id: B057
+      phase: S8
+      actor: instructor
+      cue: "Post-arrest labs available — fire post-ROSC bundle."
+      action:
+        type: http_post
+        target: print_service
+        endpoint: /print/bundle/kelley_post_rosc
+      wait_for: action_complete
+      tags_on_advance: [post_rosc_labs_delivered]
+
+    - id: B058
+      phase: S8
+      actor: instructor
+      cue: "Scenario complete. Move to final debrief."
+      wait_for: instructor_ack
+      tags_on_advance: [scenario_complete]
+
+# ===========================================================================
+# OBSERVATION TAG VOCABULARY
+# These are the tags this scenario can produce. Used by the future debrief
+# generator. Keep this list curated — every tag should correspond to a
+# debrief-worthy observation.
+# ===========================================================================
+
+observation_vocabulary:
+  team_setup:
+    - team_setup_complete_and_organized
+    - team_missed_pacer_box
+    - team_missed_atrium_setup
+    - team_did_not_prep_meds
+
+  team_communication:
+    - team_asked_about_pacing
+    - team_asked_about_lines
+    - team_asked_about_mechanical_valve
+    - team_asked_no_questions
+    - team_gave_organized_sbar
+    - team_called_disorganized_got_hung_up
+    - team_did_not_call
+
+  family_management:
+    - rn_introduced_self_calmly
+    - rn_used_too_much_jargon
+    - rn_did_not_introduce
+    - rn_prepared_her_for_what_she_will_see
+    - rn_set_timeline_expectations
+    - rn_explained_mechanical_valve_sound
+    - team_addressed_patricia
+
+  clinical_action:
+    - team_initiated_atrial_pacing_per_orders
+    - team_called_surgeon_for_orders_unnecessarily
+    - team_gave_atropine
+    - team_continued_to_monitor_without_action
+    - team_troubleshot_pacer_and_recaptured
+    - team_added_dobutamine
+    - team_recognized_within_90s
+    - team_called_surgeon_within_3min
+    - team_drew_stat_coags
+
+  recognition:
+    - team_noticed_output_drop_with_worsening
+    - team_continued_volume_resuscitation
+    - team_noticed_filling_pressure_equalization
+    - team_examined_chest_tube_setup
+    - team_missed_discrepancy
+    - team_recognized_called_for_re_exploration
+    - team_continued_volume_only
+    - team_recognized_but_did_not_escalate
+
+  code_response:
+    - cpr_initiated_within_10s
+    - shock_delivered_within_2min
+    - meds_per_acls_algorithm
+    - bedside_sternotomy_considered
+    - team_struggled_with_role_assignment
+
+# ===========================================================================
+# END OF KELLEY SCENARIO STUB
+# ===========================================================================
